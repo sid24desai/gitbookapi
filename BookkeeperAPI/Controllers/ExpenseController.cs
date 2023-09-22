@@ -1,19 +1,26 @@
 ﻿namespace BookkeeperAPI.Controllers
 {
     #region usings
-    using BookkeeperAPI.Model;
+    using BookkeeperAPI.Data;
+    using BookkeeperAPI.Entity;
     using Microsoft.AspNetCore.Mvc;
     #endregion
 
     [ApiController]
-    [Route("/api/[controller]")]
+    [Route("/api/v1/user/{userId}/expenses")]
     [Produces("application/json")]
     public class ExpenseController : ControllerBase
     {
-        [HttpGet]
-        public ActionResult<List<Expense>> GetExpense()
+        private BookkeeperContext _context;
+        public ExpenseController(BookkeeperContext context) 
         {
-            return new List<Expense>() { new Expense() { Id = Guid.NewGuid(), Date = DateTime.Now, Name = "test expense", Category = ExpenseCategory.FinancialExpenses, Amount = 5450.00 } };
+            _context = context;
+        }
+
+        [HttpGet]
+        public ActionResult<List<Expense>> GetExpense(Guid userId)
+        {
+            return Ok(_context.Expenses.Where(x => x.User.Id.Equals(userId)));
         }
     }
 }

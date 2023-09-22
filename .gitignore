@@ -364,4 +364,4 @@ MigrationBackup/
 
 /BookkeeperAPI/obj
 /.vs
-BookkeeperAPI/appsettings.Development.json
+/BookkeeperAPI/appsettings.Development.json
