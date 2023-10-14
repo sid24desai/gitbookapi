@@ -4,6 +4,9 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using Newtonsoft.Json;
 using BookkeeperAPI.Middlewares;
+using Azure.Identity;
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
+using Azure.Security.KeyVault.Secrets;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
@@ -14,14 +17,18 @@ builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
     {
         options.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-    }); ;
+    });
+
+SecretClient client = new SecretClient(new Uri($"https://{configuration["Keyvault"]}.vault.azure.net"), new DefaultAzureCredential());
+
+builder.Configuration.AddAzureKeyVault(client, new KeyVaultSecretManager());
 
 // Add DB context to connect to database
 builder.Services.AddDbContext<BookkeeperContext>(
     optionsBuilder => optionsBuilder
-    .UseNpgsql(configuration["ConnectionStrings:BookkeeperDB"])
+    .UseNpgsql(configuration["BookkeeperDB"])
     .LogTo(Console.WriteLine, LogLevel.Information)
-) ;
+);
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
