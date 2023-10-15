@@ -7,6 +7,8 @@ using BookkeeperAPI.Middlewares;
 using Azure.Identity;
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Security.KeyVault.Secrets;
+using Npgsql;
+using BookkeeperAPI.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
@@ -23,13 +25,14 @@ SecretClient client = new SecretClient(new Uri($"https://{configuration["Keyvaul
 
 builder.Configuration.AddAzureKeyVault(client, new KeyVaultSecretManager());
 
+NpgsqlDataSourceBuilder dataSourceBuilder = new NpgsqlDataSourceBuilder(configuration["BookkeeperDB"]);
+dataSourceBuilder.MapEnum<ExpenseCategory>();
+NpgsqlDataSource dataSource = dataSourceBuilder.Build();
+
 // Add DB context to connect to database
 builder.Services.AddDbContext<BookkeeperContext>(
-    optionsBuilder => optionsBuilder
-    .UseNpgsql(configuration["BookkeeperDB"])
-    .LogTo(Console.WriteLine, LogLevel.Information)
+    optionsBuilder => optionsBuilder.UseNpgsql(dataSource)
 );
-
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen((options) =>

@@ -1,6 +1,7 @@
 ﻿namespace BookkeeperAPI.Data
 {
     #region usings
+    using BookkeeperAPI.Constants;
     using BookkeeperAPI.Entity;
     using Microsoft.EntityFrameworkCore;
     #endregion
@@ -30,6 +31,8 @@
                 .HasForeignKey<UserCredential>(u => u.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+
+            modelBuilder.HasPostgresEnum<ExpenseCategory>();
             base.OnModelCreating(modelBuilder);
         }
     }

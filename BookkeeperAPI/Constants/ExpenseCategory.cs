@@ -2,14 +2,14 @@
 {
     public enum ExpenseCategory
     {
-        Shopping,
-        Food,
-        Housing,
-        Transportation,
-        Vehicle,
-        Entertainment,
-        Communication,
-        FinancialExpenses,
-        Investment
+        shopping,
+        food,
+        housing,
+        transportation,
+        vehicle,
+        entertainment,
+        communication,
+        financialExpenses,
+        investment
     }
 }
