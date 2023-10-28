@@ -8,6 +8,8 @@
     using Microsoft.EntityFrameworkCore;
     using BookkeeperAPI.Constants;
     using BookkeeperAPI.Utility;
+    using System.ComponentModel;
+    using System;
     #endregion
 
     [ApiController]
@@ -21,16 +23,55 @@
         }
 
         [HttpGet("/api/me/expenses")]
-        public async Task<ActionResult<List<ExpenseView>>> GetExpense(Guid userId)
+        public async Task<ActionResult<PaginatedResult<ExpenseView>>> GetExpense([FromHeader] Guid userId, int pageNumber = 1, int pageSize = 25, ExpenseCategory? category = null, string? name = null, DateTime? from = null, DateTime? to = null)
         {
-            if(userId == Guid.Empty)
+            if (userId == Guid.Empty)
             {
                 return BadRequest();
             }
 
-            return Ok(
-                await _context.Expenses
-                .Where(x => x.UserId.Equals(userId))
+            string domain = HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + HttpContext.Request.Path;
+
+            string filterQuery = "";
+            Dictionary<string, dynamic> parameters = new Dictionary<string, dynamic>()
+            {
+                { "pageNumber", pageNumber },
+                { "pageSize", pageSize }
+            };
+
+            if (category != null)
+            {
+                filterQuery += $"&category={category}";
+                parameters.Add("category", category.ToString()!);
+            }
+
+            if (name != null)
+            {
+                filterQuery += $"&name={name}";
+                parameters.Add("name", name);
+            }
+
+            if (from != null)
+            {
+                filterQuery += $"&from={from}";
+                parameters.Add("from", from);
+            }
+
+            if (to != null)
+            {
+                filterQuery += $"&to={to}";
+                parameters.Add("to", to);
+            }
+
+            List<ExpenseView> data = await _context.Expenses
+                .Where(x => (
+                    x.UserId.Equals(userId) &&
+                    (x.Category == category || category == null) &&
+                    (name == null || x.Name.Contains(name)) &&
+                    (from == null || x.Date >= from) &&
+                    (to == null || x.Date <= to)
+                    )
+                )
                 .Select(x => new ExpenseView()
                 {
                     Id = x.Id,
@@ -38,7 +79,38 @@
                     Amount = x.Amount,
                     Category = x.Category.ToString(),
                     Date = x.Date,
-                }).ToListAsync());
+                })
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            int totalCount = await _context.Expenses
+                .Where(x => (
+                    x.UserId.Equals(userId) &&
+                    (x.Category == category || category == null) &&
+                    (name == null || x.Name.Contains(name)) &&
+                    (from == null || x.Date >= from) &&
+                    (to == null || x.Date <= to)
+                    )
+                )
+                .CountAsync();
+
+            int totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+            PaginatedResult<ExpenseView> result = new PaginatedResult<ExpenseView>()
+            {
+                PageCount = totalPages,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                FirstPage = domain + "?pageNumber=1&pageSize=" + pageSize + filterQuery,
+                LastPage = domain + "?pageNumber=" + totalPages + "&pageSize=" + pageSize + filterQuery,
+                TotalCount = totalCount,
+                NextPage = pageNumber == totalPages ? null : (domain + "?pageNumber=" + (pageNumber + 1) + "&pageSize=" + pageSize + filterQuery),
+                PreviousPage = pageNumber == 1 ? null : (domain + "?pageNumber=" + (pageNumber - 1) + "&pageSize=" + pageSize + filterQuery),
+                Data = data,
+            };
+
+            return result;
         }
 
         [HttpGet("/api/expenses/{expenseId}")]
@@ -70,7 +142,7 @@
             _expense.UserId = userId;
             _expense.Name = expense.Name;
             _expense.Amount = expense.Amount;
-            _expense.Category = expense.Category.ToEnum<ExpenseCategory>();
+            _expense.Category = expense.Category;
             _expense.Date = expense.Date;
 
             await _context.Expenses.AddAsync(_expense);

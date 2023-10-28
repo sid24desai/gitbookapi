@@ -2,7 +2,10 @@
 {
     #region usings
     using System.ComponentModel;
+    using System.Text.Json.Serialization;
     #endregion
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum Currency
     {
         [Description("AED - United Arab Emirates dirham")] AED = 784,
