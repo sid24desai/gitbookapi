@@ -9,6 +9,10 @@ using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Security.KeyVault.Secrets;
 using Npgsql;
 using BookkeeperAPI.Constants;
+using BookkeeperAPI.Service.Interface;
+using BookkeeperAPI.Service;
+using BookkeeperAPI.Repository.Interface;
+using BookkeeperAPI.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
@@ -52,6 +56,11 @@ builder.Services.AddCors((options) =>
         policy.AllowAnyOrigin();
     });
 });
+
+builder.Services.AddScoped<IExpenseService, ExpenseService>();
+builder.Services.AddScoped<IExpenseRepository, ExpenseRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 
