@@ -1,15 +1,13 @@
 ﻿namespace BookkeeperAPI.Service
 {
-    using Azure.Core;
-    using BookkeeperAPI.Entity;
     #region usings
+    using BookkeeperAPI.Entity;
     using BookkeeperAPI.Exceptions;
     using BookkeeperAPI.Model;
     using BookkeeperAPI.Repository.Interface;
     using BookkeeperAPI.Service.Interface;
-    using Microsoft.EntityFrameworkCore;
-    using Microsoft.EntityFrameworkCore.ChangeTracking;
     #endregion
+
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
@@ -30,8 +28,8 @@
 
             UserView user = new UserView()
             {
-                DisplayName = result.Credential.DisplayName,
-                Email = result.Credential.Email,
+                DisplayName = result.Credential!.DisplayName!,
+                Email = result.Credential.Email!,
                 Id = result.Id,
                 Preferences = result.Preferences!
             };
@@ -57,10 +55,10 @@
 
             return new UserView()
             {
-                DisplayName = user.Credential.DisplayName,
-                Email = user.Credential.Email,
+                DisplayName = user.Credential.DisplayName!,
+                Email = user.Credential.Email!,
                 Id = user.Id,
-                Preferences = user.Preferences
+                Preferences = user.Preferences!
             };
         }
 
@@ -78,8 +76,8 @@
 
             return new UserView()
             {
-                DisplayName = user.Credential.DisplayName,
-                Email = user.Credential.Email,
+                DisplayName = user.Credential.DisplayName!,
+                Email = user.Credential.Email!,
                 Id = user.Id,
                 Preferences = user.Preferences
             };

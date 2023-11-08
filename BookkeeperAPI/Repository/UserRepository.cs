@@ -20,18 +20,32 @@
 
         public async Task<User?> GetUserByIdAsync(Guid userId)
         {
-            return await _context.Users.Where(x => x.Id.Equals(userId)).FirstOrDefaultAsync();
+            return await _context.Users
+                .Where(x => x.Id.Equals(userId))
+                .Include(x => x.Credential)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<User?> GetUserByEmailAsync([EmailAddress] string email)
         {
-            return await _context.Users.Where(x => x.Credential.Email == email).FirstOrDefaultAsync();
+            return await _context.Users
+                .Where(x => x.Credential!.Email == email)
+                .Include(x => x.Credential)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<User?> GetUserByEmailAsync(LoginCredential credential)
+        {
+            return await _context.Users
+                .Where(x => x.Credential!.Email == credential.Email && x.Credential.Password == credential.Password)
+                .Include(x => x.Credential)
+                .FirstOrDefaultAsync();
         }
 
         public async Task CreateUserAsync(User user)
         {
             await _context.Users.AddAsync(user);
-            await _context.Credentials.AddAsync(user.Credential);
+            await _context.Credentials.AddAsync(user.Credential!);
 
             await _context.SaveChangesAsync();
         }

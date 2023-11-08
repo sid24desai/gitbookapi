@@ -1,23 +1,18 @@
 ﻿namespace BookkeeperAPI.Model
 {
     #region usings
-    using BookkeeperAPI.Entity;
     using System.ComponentModel;
     using System.ComponentModel.DataAnnotations;
     #endregion
 
-    public class CreateUserRequest
+    public class LoginCredential
     {
-        [MaxLength(100)]
-        public string? DisplayName { get; set; }
-
-        public UserPreference? UserPreference { get; set; }
-
         [EmailAddress]
+        [Required]
         public string? Email { get; set; }
 
         [PasswordPropertyText(true)]
-        [MinLength(8)]
+        [Required]
         public string? Password { get; set; }
     }
 }

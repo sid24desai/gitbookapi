@@ -15,17 +15,16 @@
 
         [Column("display_name")]
         [MaxLength(100)]
-        public string DisplayName { get; set; }
+        public string? DisplayName { get; set; }
 
         [Column("email")]
         [EmailAddress]
-        public string Email { get; set; }
+        public string? Email { get; set; }
 
         [Column("password")]
         [PasswordPropertyText(true)]
-        [MaxLength(25)]
         [MinLength(8)]
-        public string Password { get; set; }
+        public string? Password { get; set; }
 
         [Column("last_updated")]
         public DateTime LastUpdated { get; set; } 
@@ -38,6 +37,6 @@
         [Column("user_id")]
         public Guid UserId { get; set; }
 
-        public User User { get; set; }
+        public User? User { get; set; }
     }
 }

@@ -14,6 +14,7 @@
     #endregion
 
     [ApiController]
+    [Authorize]
     [Produces("application/json")]
     public class UserController : ControllerBase
     {

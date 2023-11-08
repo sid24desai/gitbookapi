@@ -16,7 +16,7 @@
         public UserPreference? Preferences { get; set; }
 
 
-        public UserCredential Credential { get; set; }
+        public UserCredential? Credential { get; set; }
         
         public IEnumerable<Expense>? Expenses { get; set; }
     }

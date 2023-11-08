@@ -13,6 +13,11 @@ using BookkeeperAPI.Service.Interface;
 using BookkeeperAPI.Service;
 using BookkeeperAPI.Repository.Interface;
 using BookkeeperAPI.Repository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.DependencyInjection;
+using System.Text;
+using Microsoft.AspNetCore.Mvc.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
@@ -33,6 +38,20 @@ NpgsqlDataSourceBuilder dataSourceBuilder = new NpgsqlDataSourceBuilder(configur
 dataSourceBuilder.MapEnum<ExpenseCategory>();
 NpgsqlDataSource dataSource = dataSourceBuilder.Build();
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+{
+    options.SaveToken = true;
+    options.RequireHttpsMetadata = false;
+    options.TokenValidationParameters = new TokenValidationParameters()
+    {
+        ValidateAudience = true,
+        ValidateIssuer = true,
+        ValidAudience = configuration[configuration["Jwt:Aud"]!],
+        ValidIssuer = configuration[configuration["Jwt:Iss"]!],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration[configuration["Jwt:Key"]!]!)),
+    };
+});
+
 // Add DB context to connect to database
 builder.Services.AddDbContext<BookkeeperContext>(
     optionsBuilder => optionsBuilder.UseNpgsql(dataSource)
@@ -46,6 +65,29 @@ builder.Services.AddSwaggerGen((options) =>
     options.UseInlineDefinitionsForEnums();
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please enter a valid token",
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        BearerFormat = "JWT",
+        Scheme = "Bearer"
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type=ReferenceType.SecurityScheme,
+                    Id="Bearer"
+                }
+            },
+            new string[]{}
+        }
+    });
 });
 builder.Services.AddCors((options) =>
 {
@@ -81,6 +123,7 @@ app.UseMiddleware<ExceptionHandler>();
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

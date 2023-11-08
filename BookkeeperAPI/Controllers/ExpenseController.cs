@@ -14,9 +14,11 @@
     using BookkeeperAPI.Service;
     using System.ComponentModel.DataAnnotations;
     using BookkeeperAPI.Exceptions;
+    using Microsoft.AspNetCore.Authorization;
     #endregion
 
     [ApiController]
+    [Authorize]
     [Produces("application/json")]
     public class ExpenseController : ControllerBase
     {
@@ -56,7 +58,7 @@
         [HttpPost("/api/expenses")]
         [ProducesDefaultResponseType(typeof(ExpenseView))]
         [ProducesErrorResponseType(typeof(ErrorResponseModel))]
-        public async Task<ActionResult<ExpenseView>> CreateExpense(Guid userId, CreateExpenseRequest expense)
+        public async Task<ActionResult<ExpenseView>> CreateExpense([FromQuery][Required] Guid userId, [FromBody][Required] CreateExpenseRequest expense)
         {
             if (userId == Guid.Empty)
             {
