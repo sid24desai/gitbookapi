@@ -4,6 +4,7 @@
     #region usings
     using BookkeeperAPI.Data;
     using BookkeeperAPI.Entity;
+    using BookkeeperAPI.Exceptions;
     using BookkeeperAPI.Model;
     using BookkeeperAPI.Service.Interface;
     using Microsoft.AspNetCore.Authorization;
@@ -26,14 +27,18 @@
         }
 
         [HttpGet("/api/me/account")]
-        public async Task<ActionResult<UserView>> GetUser([FromQuery] Guid userId)
+        public async Task<ActionResult<UserView>> GetUser()
         {
-            if(userId == Guid.Empty)
+            Guid userId;
+            string userIdClaim = HttpContext.User.Claims.Where(x => x.Type == "user_id").First().Value.ToString();
+            bool isValidUserId = Guid.TryParse(userIdClaim, out userId);
+
+            if (!isValidUserId)
             {
-                return BadRequest();
+                throw new HttpOperationException(401, "Unauthorized");
             }
 
-           UserView user = await _userService.GetUserByIdAsync(userId);
+            UserView user = await _userService.GetUserByIdAsync(userId);
 
             return Ok(user);
         }
@@ -47,8 +52,17 @@
         }
 
         [HttpPatch("/api/me/preference")]
-        public async Task<ActionResult<UserView>> UpdateUserPreference([FromQuery] Guid userId, UserPreference preference)
+        public async Task<ActionResult<UserView>> UpdateUserPreference(UserPreference preference)
         {
+            Guid userId;
+            string userIdClaim = HttpContext.User.Claims.Where(x => x.Type == "user_id").First().Value.ToString();
+            bool isValidUserId = Guid.TryParse(userIdClaim, out userId);
+
+            if (!isValidUserId)
+            {
+                throw new HttpOperationException(401, "Unauthorized");
+            }
+
             UserView user = await _userService.UpdateUserPreferenceAsync(userId, preference);
 
             return Ok(user);
@@ -63,9 +77,17 @@
         }
 
         [HttpDelete("/api/me/account")]
-        public async Task<IActionResult> DeleteUser(Guid userId)
+        public async Task<IActionResult> DeleteUser()
         {
-            // TODO(BOOKA-29): Update logic to select user based on user id found in access token
+            Guid userId;
+            string userIdClaim = HttpContext.User.Claims.Where(x => x.Type == "user_id").First().Value.ToString();
+            bool isValidUserId = Guid.TryParse(userIdClaim, out userId);
+
+            if (!isValidUserId)
+            {
+                throw new HttpOperationException(401, "Unauthorized");
+            }
+
             await _userService.DeleteUserAsync(userId);
 
             return StatusCode(StatusCodes.Status204NoContent, null);

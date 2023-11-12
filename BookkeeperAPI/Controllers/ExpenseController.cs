@@ -22,22 +22,24 @@
     [Produces("application/json")]
     public class ExpenseController : ControllerBase
     {
-        private readonly BookkeeperContext _context;
         private readonly IExpenseService _expenseService;
         public ExpenseController(BookkeeperContext context, IExpenseService expenseService)
         {
-            _context = context;
             _expenseService = expenseService;
         }
 
         [HttpGet("/api/me/expenses")]
         [ProducesDefaultResponseType(typeof(PaginatedResult<ExpenseView>))]
         [ProducesErrorResponseType(typeof(ErrorResponseModel))]
-        public async Task<ActionResult<PaginatedResult<ExpenseView>>> GetExpense([FromHeader] [Required] Guid userId, [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 25, [FromQuery] ExpenseCategory? category = null, [FromQuery] string? name = null, [FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
+        public async Task<ActionResult<PaginatedResult<ExpenseView>>> GetExpense([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 25, [FromQuery] ExpenseCategory? category = null, [FromQuery] string? name = null, [FromQuery] DateTime? from = null, [FromQuery] DateTime? to = null)
         {
-            if (userId == Guid.Empty)
+            Guid userId;
+            string userIdClaim = HttpContext.User.Claims.Where(x => x.Type == "user_id").First().Value.ToString();
+            bool isValidUserId = Guid.TryParse(userIdClaim, out userId);
+
+            if (!isValidUserId)
             {
-                throw new HttpOperationException(StatusCodes.Status400BadRequest, "UserId provided is invalid");
+                throw new HttpOperationException(401, "Unauthorized");
             }
 
             string domain = HttpContext.Request.Scheme + "://" + HttpContext.Request.Host + HttpContext.Request.Path;
@@ -58,11 +60,15 @@
         [HttpPost("/api/expenses")]
         [ProducesDefaultResponseType(typeof(ExpenseView))]
         [ProducesErrorResponseType(typeof(ErrorResponseModel))]
-        public async Task<ActionResult<ExpenseView>> CreateExpense([FromQuery][Required] Guid userId, [FromBody][Required] CreateExpenseRequest expense)
+        public async Task<ActionResult<ExpenseView>> CreateExpense([FromBody][Required] CreateExpenseRequest expense)
         {
-            if (userId == Guid.Empty)
+            Guid userId;
+            string userIdClaim = HttpContext.User.Claims.Where(x => x.Type == "user_id").First().Value.ToString();
+            bool isValidUserId = Guid.TryParse(userIdClaim, out userId);
+
+            if (!isValidUserId)
             {
-                throw new HttpOperationException(StatusCodes.Status400BadRequest, "UserId provided is invalid");
+                throw new HttpOperationException(401, "Unauthorized");
             }
 
             ExpenseView result = await _expenseService.CreateExpenseAsync(userId, expense);
