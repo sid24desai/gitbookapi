@@ -15,9 +15,8 @@ using BookkeeperAPI.Repository.Interface;
 using BookkeeperAPI.Repository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.DependencyInjection;
 using System.Text;
-using Microsoft.AspNetCore.Mvc.Controllers;
+using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 IConfiguration configuration = builder.Configuration;
@@ -42,13 +41,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 {
     options.SaveToken = true;
     options.RequireHttpsMetadata = false;
+    RSA rsa = RSA.Create();
+    rsa.FromXmlString(Encoding.UTF8.GetString(Convert.FromBase64String(configuration[configuration["RSA:Key:Public"]!]!)));
     options.TokenValidationParameters = new TokenValidationParameters()
     {
         ValidateAudience = true,
         ValidateIssuer = true,
         ValidAudience = configuration[configuration["Jwt:Aud"]!],
         ValidIssuer = configuration[configuration["Jwt:Iss"]!],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration[configuration["Jwt:Key"]!]!)),
+        IssuerSigningKey = new RsaSecurityKey(rsa),
     };
 });
 

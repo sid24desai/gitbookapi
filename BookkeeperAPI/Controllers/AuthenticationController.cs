@@ -2,6 +2,7 @@
 {
     #region usings
     using BookkeeperAPI.Entity;
+    using BookkeeperAPI.Exceptions;
     using BookkeeperAPI.Model;
     using BookkeeperAPI.Repository.Interface;
     using Microsoft.AspNetCore.Authorization;
@@ -9,8 +10,11 @@
     using Microsoft.IdentityModel.Tokens;
     using System.ComponentModel.DataAnnotations;
     using System.IdentityModel.Tokens.Jwt;
+    using System.Runtime.CompilerServices;
     using System.Security.Claims;
+    using System.Security.Cryptography;
     using System.Text;
+    using System.Xml;
     #endregion
 
     [ApiController]
@@ -33,14 +37,14 @@
         {
             if (credential == null || credential.Email == null || credential.Password == null)
             {
-                return BadRequest();
+                throw new HttpOperationException(400, "Bad Request");
             }
 
             User? userInfo = await _userRepository.GetUserByEmailAsync(credential);
 
             if (userInfo == null)
             {
-                return BadRequest("Invalid credentials");
+                throw new HttpOperationException(400, "Invalid credentials");
             }
 
             Claim[] claims = new[]
@@ -49,20 +53,21 @@
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim("user_id", userInfo.Id.ToString()),
                 new Claim("display_name", userInfo.Credential!.DisplayName!),
-                new Claim("user_name", userInfo.Credential.Email!)
+                new Claim("user_name", userInfo.Credential.Email!),
+                new Claim("nbf", ToUnixEpoch(DateTime.UtcNow).ToString(), ClaimValueTypes.Integer64),
+                new Claim("iat", ToUnixEpoch(DateTime.UtcNow).ToString(), ClaimValueTypes.Integer64)
             };
 
-            DateTime expiresAt = DateTime.UtcNow.AddMinutes(20);
-
-            SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration[_configuration["Jwt:Key"]!]!));
-            SigningCredentials singIn = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            DateTime expiresAt = DateTime.UtcNow.AddMinutes(30);
+            RSA rsa = RSA.Create();
+            rsa.FromXmlString(Encoding.UTF8.GetString(Convert.FromBase64String(_configuration[_configuration["RSA:Key:Private"]!]!)));
+            SigningCredentials singIn = new SigningCredentials(new RsaSecurityKey(rsa), SecurityAlgorithms.RsaSha256);
             JwtSecurityToken token = new JwtSecurityToken(
                 issuer: _configuration[_configuration["Jwt:Iss"]!]!,
                 audience: _configuration[_configuration["Jwt:Aud"]!]!,
                 claims: claims,
                 signingCredentials: singIn,
-                expires: expiresAt,
-                notBefore: DateTime.UtcNow
+                expires: expiresAt
             );
 
             string accessToken = new JwtSecurityTokenHandler().WriteToken(token);
@@ -73,6 +78,11 @@
                 ExpiresAt = expiresAt,
                 TokenId = Guid.NewGuid()
             });
+        }
+
+        private static long ToUnixEpoch(DateTime date)
+        {   
+            return (long)Math.Round((date.ToUniversalTime() - new DateTimeOffset(1970, 1, 1, 0, 0, 0, TimeSpan.Zero)).TotalSeconds);
         }
     }
 }
