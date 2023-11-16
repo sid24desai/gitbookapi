@@ -6,12 +6,15 @@
     using BookkeeperAPI.Entity;
     using BookkeeperAPI.Exceptions;
     using BookkeeperAPI.Model;
+    using BookkeeperAPI.Service;
     using BookkeeperAPI.Service.Interface;
     using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Mvc;
     using Microsoft.EntityFrameworkCore;
     using Microsoft.EntityFrameworkCore.ChangeTracking;
     using Microsoft.Identity.Client;
+    using System.ComponentModel.DataAnnotations;
+    using System.Net.Mail;
     #endregion
 
     [ApiController]
@@ -20,10 +23,12 @@
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IConfiguration _configuration;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IConfiguration configuration)
         {
             _userService = userService;
+            _configuration = configuration;
         }
 
         [HttpGet("/api/me/account")]
@@ -77,7 +82,7 @@
         }
 
         [HttpDelete("/api/me/account")]
-        public async Task<IActionResult> DeleteUser()
+        public async Task<ActionResult> DeleteUser()
         {
             Guid userId;
             string userIdClaim = HttpContext.User.Claims.Where(x => x.Type == "user_id").First().Value.ToString();
@@ -91,6 +96,30 @@
             await _userService.DeleteUserAsync(userId);
 
             return StatusCode(StatusCodes.Status204NoContent, null);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("/api/users/new/otp")]
+        public async Task<ActionResult> GetOtpForEmail([FromBody] [Required] string email)
+        {
+            string body = System.IO.File.ReadAllText("EmailTemplates/OtpValidation.htm");
+            body = body.Replace("[User]", email);
+            body = body.Replace("[OTP_CODE]", OneTimePassword.Generate().ToString());
+            MailMessage message = new MailMessage()
+            {
+                From = new MailAddress(_configuration[_configuration["Email:Address"]!]!, "Bookkeeper"),
+                Subject = "OTP for validating Bookkeeper account",
+                IsBodyHtml = true,
+                Body = body
+            };
+            message.To.Add(new MailAddress(email));
+            await EmailService.SendEmail(new LoginCredential()
+            {
+                Email = _configuration[_configuration["Email:Address"]!],
+                Password = _configuration[_configuration["Email:Password"]!]
+            }, message);
+
+            return Ok();
         }
     }
 }

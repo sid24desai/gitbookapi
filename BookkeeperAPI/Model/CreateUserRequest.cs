@@ -14,10 +14,10 @@
         public UserPreference? UserPreference { get; set; }
 
         [EmailAddress]
-        public string? Email { get; set; }
+        public string Email { get; set; } = string.Empty;
 
         [PasswordPropertyText(true)]
         [MinLength(8)]
-        public string? Password { get; set; }
+        public string Password { get; set; } = string.Empty;
     }
 }

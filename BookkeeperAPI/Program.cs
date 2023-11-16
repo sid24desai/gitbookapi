@@ -33,6 +33,12 @@ SecretClient client = new SecretClient(new Uri($"https://{configuration["Keyvaul
 
 builder.Configuration.AddAzureKeyVault(client, new KeyVaultSecretManager());
 
+builder.Host.ConfigureLogging(logging =>
+{
+    logging.ClearProviders();
+    logging.AddConsole();
+});
+
 NpgsqlDataSourceBuilder dataSourceBuilder = new NpgsqlDataSourceBuilder(configuration["BookkeeperDB"]);
 dataSourceBuilder.MapEnum<ExpenseCategory>();
 NpgsqlDataSource dataSource = dataSourceBuilder.Build();

@@ -39,6 +39,7 @@
 
         public async Task<UserView> CreateNewUserAsync(CreateUserRequest request)
         {
+            var _ = await _userRepository.GetUserByEmailAsync(request.Email) == null ? throw new HttpOperationException($"User with e-mail \"{request.Email}\" already exists.") : true;
             User user = new User();
             user.Preferences = request.UserPreference;
             user.Credential = new UserCredential()
