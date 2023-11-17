@@ -42,6 +42,11 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }} 
+          
       - name: Download artifact from build job
         uses: actions/download-artifact@v3
         with:
@@ -51,7 +56,7 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'bookkeeper'
+          app-name: 'valleywebapp098'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_6D25EF40ABAE4F35A887AF5F1385AE23 }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_729B32E8D2FC4285AD6D2A8AF88AD194 }}
           package: .
